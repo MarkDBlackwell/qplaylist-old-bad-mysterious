@@ -16,7 +16,7 @@ rem all reside in the same directory.
 rem See the program's source code file for a description.
 
 c:
-cd \Users\Megan\Desktop\playlist\
+cd \playlist\
 start /wait cmd /C copy /Y z:\NowPlaying.xml input.xml
 start /wait cmd /C copy /Y z:\NowPlaying\Template.html template.html
 start /wait cmd /C ruby playlist.rb
