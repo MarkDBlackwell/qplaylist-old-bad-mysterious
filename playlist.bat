@@ -15,8 +15,11 @@ rem all reside in the same directory.
 
 rem See the program's source code file for a description.
 
+rem Per http://stackoverflow.com/questions/357315/get-list-of-passed-arguments-in-windows-batch-script-bat
+rem %~p0 is the path to the script.
 c:
-cd \playlist\
+rem %Change to the batch file's directory:
+cd %~p0
 start /wait cmd /C copy /Y z:\NowPlaying.xml input.xml
 start /wait cmd /C copy /Y z:\NowPlaying\Template.html template.html
 start /wait cmd /C ruby playlist.rb
