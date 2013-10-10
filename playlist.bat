@@ -1,6 +1,6 @@
 rem Author: Mark D. Blackwell (google me)
 rem October 9, 2013 - created
-rem October 9, 2013 - updated
+rem October 10, 2013 - comment out firewall-blocked ftp
 rem Description:
 
 rem This Windows batch file:
@@ -18,10 +18,11 @@ rem See the program's source code file for a description.
 c:
 cd \Users\Megan\Desktop\playlist\
 start /wait cmd /C copy /Y z:\NowPlaying.xml input.xml
+start /wait cmd /C copy /Y z:\NowPlaying\Template.html template.html
 start /wait cmd /C ruby playlist.rb
-start /wait cmd /C copy /Y output.html z:\CurrentPlaylist\NowPlaying.html
-z:
-cd \CurrentPlaylist\
-start /wait cmd /C ftp
-c:
-cd \Users\Megan\Desktop\playlist\
+start /wait cmd /C copy /Y output.html z:\NowPlaying\NowPlaying.html
+
+rem If FTP can succeed locally, uncomment this:
+rem start /wait cmd /C ftp -s:z:\NowPlaying\NowPlaying.ftp
+
+rem If FTP fails locally, then FTP from the z: drive's server computer.
