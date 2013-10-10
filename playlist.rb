@@ -1,7 +1,7 @@
 =begin
 Author: Mark D. Blackwell (google me)
 October 9, 2013 - created
-October 9, 2013 - updated
+October 10, 2013 - Add current time
 Description:
 
 BTW, WideOrbit is a large software system
@@ -27,22 +27,36 @@ require 'xmlsimple'
 # require 'yaml'
 
 module Playlist
-  KEYS = %w[ Title Artist ]
+  NON_XML_KEYS = %w[ Current\ Time ]
+      XML_KEYS = %w[ Artist Len Title ]
+  KEYS = NON_XML_KEYS + XML_KEYS
   FIELDS = KEYS.map{|e| "[#{e} here]"}
 
   class Snapshot
     attr_reader :values
 
     def initialize
-      get_values_from_xml unless defined? @@values
-      @values = @@values
+      get_non_xml_values
+      get_xml_values unless defined? @@xml_values
+      @values = @@non_xml_values + @@xml_values
     end
 
     protected
 
-    def get_values_from_xml
+    def get_non_xml_values
+      @@non_xml_values = NON_XML_KEYS.map do |k|
+        case k
+        when 'Current Time'
+          Time.now.localtime.round.strftime '%-l:%M %p'
+        else
+          "(Error: key '#{k}' unknown)"
+        end
+      end
+    end
+
+    def get_xml_values
       relevant_hash = xml_tree['Events'].first['SS32Event'].first
-      @@values = KEYS.map{|k| relevant_hash[k].first.strip}
+      @@xml_values = XML_KEYS.map{|k| relevant_hash[k].first.strip}
     end
 
     def xml_tree
