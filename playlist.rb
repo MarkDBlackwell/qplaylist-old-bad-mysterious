@@ -2,6 +2,7 @@
 Author: Mark D. Blackwell (google me)
 October 9, 2013 - created
 October 10, 2013 - Add current time
+October 24, 2013 - Escape the HTML
 Description:
 
 BTW, WideOrbit is a large software system
@@ -23,6 +24,7 @@ Required gems:
 xml-simple
 =end
 
+require 'cgi'
 require 'xmlsimple'
 # require 'yaml'
 
@@ -74,7 +76,7 @@ module Playlist
     end
 
     def run(s)
-      @substitutions.each{|input,output| s = s.gsub input, output}
+      @substitutions.each{|input,output| s = CGI.escape_html s.gsub input, output}
       s
     end
   end
