@@ -76,7 +76,10 @@ module Playlist
     end
 
     def run(s)
-      @substitutions.each{|input,output| s = CGI.escape_html s.gsub input, output}
+      @substitutions.each do |input,output|
+        safe_output = CGI.escape_html output
+        s = s.gsub input, safe_output
+      end
       s
     end
   end
