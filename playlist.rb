@@ -112,16 +112,22 @@ def create_output(substitutions, input_file='template.html', output_file='output
 end
 
 def build_recent(f_recent_songs, currently_playing)
-  input_file = 'recent-songs-template.html'
+  input_file  = 'recent-songs-template.html'
   output_file = 'recent-songs.html'
 end
 
 def compare_recent(currently_playing)
-  remembered = nil # Define in scope.
+  remembered, artist_title, same = nil, nil, nil # Define in scope.
   File.open 'current-song.txt', 'r+' do |f_current_song|
     remembered = f_current_song.readlines.map &:chomp
+    artist_title = currently_playing.drop 1
+    same = remembered == artist_title
+    unless same
+      f_current_song.rewind
+      artist_title.each{|e| f_current_song.print "#{e}\n"}
+    end
   end
-  remembered == currently_playing ? 'same' : nil
+  same ? 'same' : nil
 end
 
 def get_recent_songs(currently_playing)
@@ -132,10 +138,10 @@ def get_recent_songs(currently_playing)
   File.open 'recent-songs.txt', 'r+' do |f_recent_songs|
     times, artists, titles = read_recent_songs f_recent_songs
 # Push current song:
-    times.push   currently_playing.at 0
+    times.  push currently_playing.at 0
     artists.push currently_playing.at 1
-    titles.push  currently_playing.at 2
-    f_recent_songs.print currently_playing
+    titles. push currently_playing.at 2
+    currently_playing.each{|e| f_recent_songs.print "#{e}\n"}
   end
   [times, artists, titles]
 end
@@ -146,9 +152,9 @@ def read_recent_songs(f_recent_songs)
   a = f_recent_songs.readlines.map &:chomp
   song_count = a.length.div lines_per_song
   (0...song_count).each do |i|
-    times.push   a.at i * lines_per_song
+    times.  push a.at i * lines_per_song
     artists.push a.at i * lines_per_song + 1
-    titles.push  a.at i * lines_per_song + 2
+    titles. push a.at i * lines_per_song + 2
   end
   [times, artists, titles]
 end
@@ -157,9 +163,9 @@ def get_last_five_songs(times, artists, titles)
   songs_to_keep = 5
   song_count = titles.length
   songs_to_drop = song_count <= songs_to_keep ? 0 : song_count - songs_to_keep
-  [ (times.drop   songs_to_drop),
+  [ (times.  drop songs_to_drop),
     (artists.drop songs_to_drop),
-    (titles.drop  songs_to_drop) ]
+    (titles. drop songs_to_drop) ]
 end
 
 song_currently_playing = Playlist::Snapshot.new.values
