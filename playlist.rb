@@ -3,6 +3,8 @@ Author: Mark D. Blackwell (google me)
 October 9, 2013 - created
 October 10, 2013 - Add current time
 October 24, 2013 - Escape the HTML
+October 31, 2013 - Add latest five songs
+
 Description:
 
 BTW, WideOrbit is a large software system
@@ -30,9 +32,8 @@ require 'xmlsimple'
 
 module Playlist
   NON_XML_KEYS = %w[ Current\ Time ]
-      XML_KEYS = %w[ Artist Len Title ]
+      XML_KEYS = %w[ Artist Title ]
   KEYS = NON_XML_KEYS + XML_KEYS
-  FIELDS = KEYS.map{|e| "[#{e} here]"}
 
   class Snapshot
     attr_reader :values
@@ -71,8 +72,8 @@ module Playlist
   end
 
   class Substitutions
-    def initialize(current_values)
-      @substitutions = FIELDS.zip current_values
+    def initialize(fields, current_values)
+      @substitutions = fields.zip current_values
     end
 
     def run(s)
@@ -83,17 +84,91 @@ module Playlist
       s
     end
   end
+
+  class NowPlayingSubstitutions < Substitutions
+    def initialize(current_values)
+      fields = KEYS.map{|e| "[#{e} here]"}
+      super fields, current_values
+    end
+  end
+
+  class LatestFiveSubstitutions < Substitutions
+    def initialize(current_values)
+      key_types = %w[ Artist Title ]
+      count = 5
+      fields = (1..count).map(&:to_s).zip(key_types).map{|digit,key| "[#{key}#{digit} here]"}
+      super fields, current_values
+    end
+  end
 end
 
-def create_output(substitutions)
-  File.open 'template.html', 'r' do |f_template|
+def create_output(substitutions, input_file='template.html', output_file='output.html')
+  File.open input_file, 'r' do |f_template|
     lines = f_template.readlines
-    File.open 'output.html', 'w' do |f_out|
+    File.open output_file, 'w' do |f_out|
       lines.each{|e| f_out.print substitutions.run e}
     end
   end
 end
 
+def build_recent(f_recent_songs, currently_playing)
+  input_file = 'recent-songs-template.html'
+  output_file = 'recent-songs.html'
+end
+
+def compare_recent(currently_playing)
+  remembered = nil # Define in scope.
+  File.open 'current-song.txt', 'r+' do |f_current_song|
+    remembered = f_current_song.readlines.map &:chomp
+  end
+  remembered == currently_playing ? 'same' : nil
+end
+
+def get_recent_songs(currently_playing)
+# 'r+' is "Read-write, starts at beginning of file", per:
+# http://www.ruby-doc.org/core-2.0.0/IO.html#method-c-new
+
+  times, artists, titles = nil, nil, nil # Define in scope.
+  File.open 'recent-songs.txt', 'r+' do |f_recent_songs|
+    times, artists, titles = read_recent_songs f_recent_songs
+# Push current song:
+    times.push   currently_playing.at 0
+    artists.push currently_playing.at 1
+    titles.push  currently_playing.at 2
+    f_recent_songs.print currently_playing
+  end
+  [times, artists, titles]
+end
+
+def read_recent_songs(f_recent_songs)
+  times, artists, titles = [], [], []
+  lines_per_song = 3
+  a = f_recent_songs.readlines.map &:chomp
+  song_count = a.length.div lines_per_song
+  (0...song_count).each do |i|
+    times.push   a.at i * lines_per_song
+    artists.push a.at i * lines_per_song + 1
+    titles.push  a.at i * lines_per_song + 2
+  end
+  [times, artists, titles]
+end
+
+def get_last_five_songs(times, artists, titles)
+  songs_to_keep = 5
+  song_count = titles.length
+  songs_to_drop = song_count <= songs_to_keep ? 0 : song_count - songs_to_keep
+  [ (times.drop   songs_to_drop),
+    (artists.drop songs_to_drop),
+    (titles.drop  songs_to_drop) ]
+end
+
 song_currently_playing = Playlist::Snapshot.new.values
-substitutions = Playlist::Substitutions.new song_currently_playing
-create_output substitutions
+now_playing = Playlist::NowPlayingSubstitutions.new song_currently_playing
+create_output now_playing
+
+unless 'same' == (compare_recent song_currently_playing)
+  times, artists, titles = get_recent_songs song_currently_playing
+  five_songs = get_last_five_songs times, artists, titles
+  five = Playlist::LatestFiveSubstitutions.new five_songs
+  create_output five, 'latest-five-template.html', 'latest-five.html'
+end
