@@ -3,4 +3,6 @@ open ftp.{Your radio station's website's domain name}
 {Its FTP password}
 cd {Some directory such as '/public_html/radio'}
 put {Network drive letter}:\NowPlaying\NowPlaying.html
+put {Network drive letter}:\NowPlaying\LatestFive.html
+put {Network drive letter}:\NowPlaying\RecentSongs.html
 bye

@@ -27,12 +27,18 @@ rem Copy input files:
 rem Access WideOrbit's server computer by customizing this network drive letter (here, z:) if necessary:
 start /wait cmd /C copy /Y z:\NowPlaying\Template.html template.html
 start /wait cmd /C copy /Y z:\NowPlaying.xml input.xml
+start /wait cmd /C copy /Y z:\NowPlaying\LatestFiveTemplate.html latest-five-template.html
+start /wait cmd /C copy /Y z:\NowPlaying\RecentSongsTemplate.html recent-songs-template.html
+start /wait cmd /C copy /Y z:\NowPlaying\SongTemplate.html song-template.html
+
 
 rem Run the program:
 start /wait cmd /C ruby playlist.rb
 
 rem Copy output files:
 start /wait cmd /C copy /Y output.html z:\NowPlaying\NowPlaying.html
+start /wait cmd /C copy /Y latest-five.html z:\NowPlaying\LatestFive.html
+start /wait cmd /C copy /Y recent-songs.html z:\NowPlaying\RecentSongs.html
 
 rem FTP the output to a webserver computer:
 rem If FTP can succeed locally, uncomment this:
