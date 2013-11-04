@@ -94,16 +94,17 @@ module Playlist
 
   class LatestFiveSubstitutions < Substitutions
     def initialize(current_values)
-      key_types = %w[ Artist Title ]
+      key_types = %w[ Time Artist Title ]
       count = 5
-      fields = (1..count).map(&:to_s).zip(key_types).map{|digit,key| "[#{key}#{digit} here]"}
+      fields = (1..count).map(&:to_s).product(key_types).map{|digit,key| "[#{key}#{digit} here]"}
+print 'fields='; p fields
       super fields, current_values
     end
   end
 end
 
-def create_output(substitutions, input_file='template.html', output_file='output.html')
-  File.open input_file, 'r' do |f_template|
+def create_output(substitutions, input_template_file='template.html', output_file='output.html')
+  File.open input_template_file, 'r' do |f_template|
     lines = f_template.readlines
     File.open output_file, 'w' do |f_out|
       lines.each{|e| f_out.print substitutions.run e}
@@ -124,6 +125,7 @@ def compare_recent(currently_playing)
     same = remembered == artist_title
     unless same
       f_current_song.rewind
+      f_current_song.truncate 0
       artist_title.each{|e| f_current_song.print "#{e}\n"}
     end
   end
@@ -165,7 +167,8 @@ def get_last_five_songs(times, artists, titles)
   songs_to_drop = song_count <= songs_to_keep ? 0 : song_count - songs_to_keep
   [ (times.  drop songs_to_drop),
     (artists.drop songs_to_drop),
-    (titles. drop songs_to_drop) ]
+    (titles. drop songs_to_drop) ].transpose.reverse.
+      fill(['','',''], song_count...songs_to_keep).flatten
 end
 
 song_currently_playing = Playlist::Snapshot.new.values
@@ -175,6 +178,8 @@ create_output now_playing
 unless 'same' == (compare_recent song_currently_playing)
   times, artists, titles = get_recent_songs song_currently_playing
   five_songs = get_last_five_songs times, artists, titles
+#print 'five_songs='; p five_songs
   five = Playlist::LatestFiveSubstitutions.new five_songs
+#print 'five='; p five
   create_output five, 'latest-five-template.html', 'latest-five.html'
 end
