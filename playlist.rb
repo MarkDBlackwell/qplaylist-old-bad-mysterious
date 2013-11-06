@@ -78,6 +78,7 @@ module Playlist
 
     def run(s)
       @substitutions.each do |input,output|
+#print '[input,output]='; p [input,output]
         safe_output = CGI.escape_html output
         s = s.gsub input, safe_output
       end
@@ -97,7 +98,7 @@ module Playlist
       key_types = %w[ Time Artist Title ]
       count = 5
       fields = (1..count).map(&:to_s).product(key_types).map{|digit,key| "[#{key}#{digit} here]"}
-print 'fields='; p fields
+#print 'fields='; p fields
       super fields, current_values
     end
   end
@@ -136,6 +137,9 @@ def get_recent_songs(currently_playing)
 # 'r+' is "Read-write, starts at beginning of file", per:
 # http://www.ruby-doc.org/core-2.0.0/IO.html#method-c-new
 
+  n = Time.now
+  year_month_day = Time.new(n.year, n.month, n.day).strftime '%4Y %2m %2d'
+
   times, artists, titles = nil, nil, nil # Define in scope.
   File.open 'recent-songs.txt', 'r+' do |f_recent_songs|
     times, artists, titles = read_recent_songs f_recent_songs
@@ -143,6 +147,7 @@ def get_recent_songs(currently_playing)
     times.  push currently_playing.at 0
     artists.push currently_playing.at 1
     titles. push currently_playing.at 2
+    f_recent_songs.puts year_month_day
     currently_playing.each{|e| f_recent_songs.print "#{e}\n"}
   end
   [times, artists, titles]
@@ -150,13 +155,15 @@ end
 
 def read_recent_songs(f_recent_songs)
   times, artists, titles = [], [], []
-  lines_per_song = 3
+  lines_per_song = 4
   a = f_recent_songs.readlines.map &:chomp
   song_count = a.length.div lines_per_song
   (0...song_count).each do |i|
-    times.  push a.at i * lines_per_song
-    artists.push a.at i * lines_per_song + 1
-    titles. push a.at i * lines_per_song + 2
+# For now, ignore date, which is at:
+#                     i * lines_per_song + 0
+    times.  push a.at i * lines_per_song + 1
+    artists.push a.at i * lines_per_song + 2
+    titles. push a.at i * lines_per_song + 3
   end
   [times, artists, titles]
 end
