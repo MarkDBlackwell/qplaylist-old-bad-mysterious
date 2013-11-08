@@ -192,3 +192,10 @@ unless 'same' == (compare_recent now_playing)
 #print 'latest_five_substitutions='; p latest_five_substitutions
   create_output latest_five_substitutions, 'latest_five.moustache', 'latest_five.html'
 end
+
+File.open 'recent_songs.moustache', 'r' do |f_input|
+  lines = f_input.readlines
+  File.open 'recent_songs.html', 'w' do |f_output|
+    lines.each{|e| f_output.print e}
+  end
+end
