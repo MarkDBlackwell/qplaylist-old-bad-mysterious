@@ -1,0 +1,8 @@
+open ftp.{Your radio station's website's domain name}
+{Its FTP user-name}
+{Its FTP password}
+cd {Some directory such as '/public_html/radio'}
+put {Network drive letter}:\QPlaylist\NowPlaying.html
+put {Network drive letter}:\QPlaylist\LatestFive.html
+put {Network drive letter}:\QPlaylist\RecentSongs.html
+bye

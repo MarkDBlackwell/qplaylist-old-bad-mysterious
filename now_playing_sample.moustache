@@ -1,0 +1,6 @@
+<html>
+<p>As of {{current_time}}</p>
+<p>Title:   {{title}}</p>
+<p>Artist:   {{artist}}</p>
+<p><a href="NowPlaying.html">Refresh...</a></p>
+</html>

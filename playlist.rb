@@ -4,6 +4,7 @@ October 9, 2013 - created
 October 10, 2013 - Add current time
 October 24, 2013 - Escape the HTML
 October 31, 2013 - Add latest five songs
+November 8, 2013 - Use Moustache format
 
 Description:
 
@@ -31,8 +32,8 @@ require 'xmlsimple'
 # require 'yaml'
 
 module Playlist
-  NON_XML_KEYS = %w[ Current\ Time ]
-      XML_KEYS = %w[ Artist Title ]
+  NON_XML_KEYS = %w[ current_time ]
+      XML_KEYS = %w[ artist title ]
   KEYS = NON_XML_KEYS + XML_KEYS
 
   class Snapshot
@@ -49,7 +50,7 @@ module Playlist
     def get_non_xml_values
       @@non_xml_values = NON_XML_KEYS.map do |k|
         case k
-        when 'Current Time'
+        when 'current_time'
           Time.now.localtime.round.strftime '%-l:%M %p'
         else
           "(Error: key '#{k}' unknown)"
@@ -59,12 +60,12 @@ module Playlist
 
     def get_xml_values
       relevant_hash = xml_tree['Events'].first['SS32Event'].first
-      @@xml_values = XML_KEYS.map{|k| relevant_hash[k].first.strip}
+      @@xml_values = XML_KEYS.map(&:capitalize).map{|k| relevant_hash[k].first.strip}
     end
 
     def xml_tree
 # See http://xml-simple.rubyforge.org/
-      result = XmlSimple.xml_in 'input.xml', { KeyAttr: 'name' }
+      result = XmlSimple.xml_in 'now_playing.xml', { KeyAttr: 'name' }
 #     puts result
 #     print result.to_yaml
       result
@@ -88,23 +89,23 @@ module Playlist
 
   class NowPlayingSubstitutions < Substitutions
     def initialize(current_values)
-      fields = KEYS.map{|e| "[#{e} here]"}
+      fields = KEYS.map{|e| "{{#{e}}}"}
       super fields, current_values
     end
   end
 
   class LatestFiveSubstitutions < Substitutions
     def initialize(current_values)
-      key_types = %w[ Time Artist Title ]
+      key_types = %w[ start_time artist title ]
       count = 5
-      fields = (1..count).map(&:to_s).product(key_types).map{|digit,key| "[#{key}#{digit} here]"}
+      fields = (1..count).map(&:to_s).product(key_types).map{|digit,key| "{{#{key}#{digit}}}"}
 #print 'fields='; p fields
       super fields, current_values
     end
   end
 end
 
-def create_output(substitutions, input_template_file='template.html', output_file='output.html')
+def create_output(substitutions, input_template_file, output_file)
   File.open input_template_file, 'r' do |f_template|
     lines = f_template.readlines
     File.open output_file, 'w' do |f_out|
@@ -114,8 +115,8 @@ def create_output(substitutions, input_template_file='template.html', output_fil
 end
 
 def build_recent(f_recent_songs, currently_playing)
-  input_file  = 'recent-songs-template.html'
-  output_file = 'recent-songs.html'
+  input_file  = 'recent_songs.moustache'
+  output_file = 'recent_songs.html'
 end
 
 def compare_recent(currently_playing)
@@ -168,7 +169,7 @@ def read_recent_songs(f_recent_songs)
   [times, artists, titles]
 end
 
-def get_last_five_songs(times, artists, titles)
+def get_latest_five_songs(times, artists, titles)
   songs_to_keep = 5
   song_count = titles.length
   songs_to_drop = song_count <= songs_to_keep ? 0 : song_count - songs_to_keep
@@ -178,15 +179,16 @@ def get_last_five_songs(times, artists, titles)
       fill(['','',''], song_count...songs_to_keep).flatten
 end
 
-song_currently_playing = Playlist::Snapshot.new.values
-now_playing = Playlist::NowPlayingSubstitutions.new song_currently_playing
-create_output now_playing
+now_playing = Playlist::Snapshot.new.values
+now_playing_substitutions = Playlist::NowPlayingSubstitutions.new now_playing
+create_output now_playing_substitutions, 'now_playing.moustache', 'now_playing.html'
 
-unless 'same' == (compare_recent song_currently_playing)
-  times, artists, titles = get_recent_songs song_currently_playing
-  five_songs = get_last_five_songs times, artists, titles
-#print 'five_songs='; p five_songs
-  five = Playlist::LatestFiveSubstitutions.new five_songs
-#print 'five='; p five
-  create_output five, 'latest-five-template.html', 'latest-five.html'
+
+unless 'same' == (compare_recent now_playing)
+  times, artists, titles = get_recent_songs now_playing
+  latest_five = get_latest_five_songs times, artists, titles
+#print 'latest_five='; p latest_five
+  latest_five_substitutions = Playlist::LatestFiveSubstitutions.new latest_five
+#print 'latest_five_substitutions='; p latest_five_substitutions
+  create_output latest_five_substitutions, 'latest_five.moustache', 'latest_five.html'
 end
