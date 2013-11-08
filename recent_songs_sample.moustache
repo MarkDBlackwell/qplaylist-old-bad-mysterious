@@ -1,0 +1,8 @@
+<html>
+{{#songs}}
+  <p>Title:   {{title}}</p>
+  <p>Artist:   {{artist}}</p>
+  <p>Time started:  {{month}}/{{day}} {{hour}}:{{minute}}</p>
+{{/songs}}
+<p><a href="RecentSongs.html">Refresh...</a></p>
+</html>
