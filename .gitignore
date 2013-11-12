@@ -2,11 +2,11 @@
 /current-song.txt
 /now_playing.xml
 /latest_five.html
-/latest_five.moustache
+/latest_five.mustache
 /now_playing.html
 /recent_songs.html
 /recent-songs.txt
-/recent_songs.moustache
+/recent_songs.mustache
 /song-template.html
-/now_playing.moustache
+/now_playing.mustache
 old-*
