@@ -88,7 +88,7 @@ module Playlist
 
   class Run
     def build_recent(f_recent_songs, currently_playing)
-      input_file  = 'recent_songs.moustache'
+      input_file  = 'recent_songs.mustache'
       output_file = 'recent_songs.html'
     end
 
@@ -134,7 +134,7 @@ module Playlist
         }
       end
 # Songs.template_extension = 'moustache' # Allow for my error in the naming.
-      Songs.template_file = './recent_songs.moustache'
+      Songs.template_file = './recent_songs.mustache'
       File.open 'recent_songs.html', 'w' do |f_output|
         f_output.print Songs.new(songs.reverse).render
       end
@@ -206,7 +206,7 @@ module Playlist
     def run
       now_playing = Playlist::Snapshot.new.values
       now_playing_substitutions = Playlist::NowPlayingSubstitutions.new now_playing
-      create_output now_playing_substitutions, 'now_playing.moustache', 'now_playing.html'
+      create_output now_playing_substitutions, 'now_playing.mustache', 'now_playing.html'
 
       unless 'same' == (compare_recent now_playing)
         dates, times, artists, titles = recent_songs_get now_playing
@@ -214,7 +214,7 @@ module Playlist
 #print 'latest_five='; p latest_five
         latest_five_substitutions = Playlist::LatestFiveSubstitutions.new latest_five
 #print 'latest_five_substitutions='; p latest_five_substitutions
-        create_output latest_five_substitutions, 'latest_five.moustache', 'latest_five.html'
+        create_output latest_five_substitutions, 'latest_five.mustache', 'latest_five.html'
         create_output_recent_songs dates, times, artists, titles
         n = Time.now.localtime.round
         year_month_day_hour_string = Time.new(n.year, n.month, n.day, n.hour).strftime '%4Y %2m %2d %2H'

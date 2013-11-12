@@ -28,10 +28,10 @@ rem Access WideOrbit's server computer by customizing this network drive letter 
 set drive=z:
 
 rem Copy input files:
-start /wait cmd /C copy /Y %drive%\%~p0\NowPlaying.moustache now_playing.moustache
+start /wait cmd /C copy /Y %drive%\%~p0\NowPlaying.mustache now_playing.mustache
 start /wait cmd /C copy /Y %drive%\NowPlaying.xml now_playing.xml
-start /wait cmd /C copy /Y %drive%\%~p0\LatestFive.moustache latest_five.moustache
-start /wait cmd /C copy /Y %drive%\%~p0\RecentSongs.moustache recent_songs.moustache
+start /wait cmd /C copy /Y %drive%\%~p0\LatestFive.mustache latest_five.mustache
+start /wait cmd /C copy /Y %drive%\%~p0\RecentSongs.mustache recent_songs.mustache
 
 
 rem Run the program:
