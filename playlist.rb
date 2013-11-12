@@ -5,6 +5,7 @@ October 10, 2013 - Add current time
 October 24, 2013 - Escape the HTML
 October 31, 2013 - Add latest five songs
 November 8, 2013 - Use Moustache format
+November 11, 2013 - Generate recent songs in HTML
 
 Description:
 
@@ -24,10 +25,12 @@ substitutes the XML file's information into it,
 and thereby produces its output HTML file.
 
 Required gems:
+mustache
 xml-simple
 =end
 
 require 'cgi'
+require 'mustache'
 require 'xmlsimple'
 # require 'yaml'
 
@@ -105,6 +108,16 @@ module Playlist
   end
 end
 
+class Songs < Mustache
+  def initialize(a)
+    @array_of_hashed_songs = a
+  end
+
+  def songs
+    @array_of_hashed_songs
+  end
+end
+
 def create_output(substitutions, input_template_file, output_file)
   File.open input_template_file, 'r' do |f_template|
     lines = f_template.readlines
@@ -137,65 +150,111 @@ end
 def get_recent_songs(currently_playing)
 # 'r+' is "Read-write, starts at beginning of file", per:
 # http://www.ruby-doc.org/core-2.0.0/IO.html#method-c-new
-
-  n = Time.now
+  n = Time.now.localtime.round
   year_month_day = Time.new(n.year, n.month, n.day).strftime '%4Y %2m %2d'
-
-  times, artists, titles = nil, nil, nil # Define in scope.
+  dates, times, artists, titles = nil, nil, nil, nil # Define in scope.
   File.open 'recent-songs.txt', 'r+' do |f_recent_songs|
-    times, artists, titles = read_recent_songs f_recent_songs
+    dates, times, artists, titles = read_recent_songs f_recent_songs
 # Push current song:
+    dates.push          year_month_day
+    f_recent_songs.puts year_month_day
     times.  push currently_playing.at 0
     artists.push currently_playing.at 1
     titles. push currently_playing.at 2
-    f_recent_songs.puts year_month_day
     currently_playing.each{|e| f_recent_songs.print "#{e}\n"}
   end
-  [times, artists, titles]
+  [dates, times, artists, titles]
 end
 
 def read_recent_songs(f_recent_songs)
-  times, artists, titles = [], [], []
+  dates, times, artists, titles = [], [], [], []
   lines_per_song = 4
   a = f_recent_songs.readlines.map &:chomp
   song_count = a.length.div lines_per_song
   (0...song_count).each do |i|
-# For now, ignore date, which is at:
-#                     i * lines_per_song + 0
+    dates.  push a.at i * lines_per_song + 0
     times.  push a.at i * lines_per_song + 1
     artists.push a.at i * lines_per_song + 2
     titles. push a.at i * lines_per_song + 3
   end
-  [times, artists, titles]
+  [dates, times, artists, titles]
 end
 
 def get_latest_five_songs(times, artists, titles)
   songs_to_keep = 5
   song_count = titles.length
   songs_to_drop = song_count <= songs_to_keep ? 0 : song_count - songs_to_keep
-  [ (times.  drop songs_to_drop),
+  [
+    (times.  drop songs_to_drop),
     (artists.drop songs_to_drop),
-    (titles. drop songs_to_drop) ].transpose.reverse.
+    (titles. drop songs_to_drop),
+  ].transpose.reverse.
       fill(['','',''], song_count...songs_to_keep).flatten
+end
+
+def create_output_recent_songs(dates, times, artists, titles)
+  songs = dates.zip(times,artists,titles).map do |date,time,artist,title|
+    year, month, day = date.split ' '
+    clock, meridian = time.split ' '
+    hour, minute = clock.split ':'
+    {
+      artist:   artist,
+      title:    title,
+      time:     time,
+      year:     year,
+      month:    month,
+      day:      day,
+      hour:     hour,
+      minute:   minute,
+      meridian: meridian, # 'AM' or 'PM'.
+    }
+  end
+# Songs.template_extension = 'moustache' # Allow for my error in the naming.
+  Songs.template_file = './recent_songs.moustache'
+  File.open 'recent_songs.html', 'w' do |f_output|
+    f_output.print Songs.new(songs.reverse).render
+  end
+end
+
+def reduce_recent_songs(year_month_day, old_dates, old_times, old_artists, old_titles)
+  comparison_date = year_month_day - 60 * 60 * 24 * 2 # Day before yesterday.
+  big_array = []
+  (0...old_dates.length).each do |i|
+    year, month, day = old_dates.at(i).split(' ').map &:to_i
+    song_time = Time.new year, month, day
+    unless song_time < comparison_date
+      big_array.push old_dates.  at i
+      big_array.push old_times.  at i
+      big_array.push old_artists.at i
+      big_array.push old_titles. at i
+    end
+  end
+  File.open 'recent-songs.txt', 'w' do |f_recent_songs|
+    big_array.each{|e| f_recent_songs.print "#{e}\n"}
+  end
 end
 
 now_playing = Playlist::Snapshot.new.values
 now_playing_substitutions = Playlist::NowPlayingSubstitutions.new now_playing
 create_output now_playing_substitutions, 'now_playing.moustache', 'now_playing.html'
 
-
 unless 'same' == (compare_recent now_playing)
-  times, artists, titles = get_recent_songs now_playing
+  dates, times, artists, titles = get_recent_songs now_playing
   latest_five = get_latest_five_songs times, artists, titles
 #print 'latest_five='; p latest_five
   latest_five_substitutions = Playlist::LatestFiveSubstitutions.new latest_five
 #print 'latest_five_substitutions='; p latest_five_substitutions
   create_output latest_five_substitutions, 'latest_five.moustache', 'latest_five.html'
-end
-
-File.open 'recent_songs.moustache', 'r' do |f_input|
-  lines = f_input.readlines
-  File.open 'recent_songs.html', 'w' do |f_output|
-    lines.each{|e| f_output.print e}
+  create_output_recent_songs dates, times, artists, titles
+  n = Time.now.localtime.round
+  year_month_day_hour_string = Time.new(n.year, n.month, n.day, n.hour).strftime '%4Y %2m %2d %2H'
+  year_month_day             = Time.new n.year, n.month, n.day
+  File.open 'current-hour.txt', 'r+' do |f_current_hour|
+    unless f_current_hour.readlines.push('').first.chomp == year_month_day_hour_string
+      reduce_recent_songs year_month_day, dates, times, artists, titles
+      f_current_hour.rewind
+      f_current_hour.truncate 0
+      f_current_hour.print "#{year_month_day_hour_string}\n"
+    end
   end
 end
